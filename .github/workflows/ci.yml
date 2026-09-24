@@ -40,3 +40,23 @@ jobs:
 
       - name: Push Docker image
         run: docker push ghcr.io/${{ github.repository_owner }}/factorial-app:latest
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull latest Docker image
+        run: docker pull ghcr.io/${{ github.repository_owner }}/factorial-app:latest
+
+      - name: Remove old container
+        shell: powershell
+        run: |
+          docker rm -f factorial-container
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "No old container found"
+          }
+
+      - name: Run new container
+        run: docker run -d -p 5000:5000 --name factorial-container ghcr.io/${{ github.repository_owner }}/factorial-app:latest
